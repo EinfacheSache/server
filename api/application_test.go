@@ -421,10 +421,19 @@ func (s *ApplicationSuite) Test_DeleteApplication() {
 	s.ctx.Request = httptest.NewRequest("DELETE", "/token/", nil)
 	s.ctx.Params = gin.Params{{Key: "id", Value: "1"}}
 
+	var notifiedUser uint
+	var notified *model.MessagesDeleted
+	s.a.NotifyMessagesDeleted = func(userID uint, deleted *model.MessagesDeleted) {
+		notifiedUser = userID
+		notified = deleted
+	}
+
 	s.a.DeleteApplication(s.ctx)
 
 	assert.Equal(s.T(), 200, s.recorder.Code)
 	s.db.AssertAppNotExist(1)
+	assert.Equal(s.T(), uint(5), notifiedUser)
+	assert.Equal(s.T(), &model.MessagesDeleted{Deleted: model.DeletedMessages{ApplicationID: 1}}, notified)
 }
 
 func (s *ApplicationSuite) Test_UploadAppImage_NoImageProvided_expectBadRequest() {

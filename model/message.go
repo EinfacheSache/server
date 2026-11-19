@@ -106,3 +106,32 @@ type CreateMessage struct {
 	// example: {"home::appliances::thermostat::change_temperature":{"temperature":23},"home::appliances::lighting::on":{"brightness":15}}
 	Extras map[string]any `form:"-" query:"-" json:"extras,omitempty"`
 }
+
+// MessagesDeleted Model
+//
+// Sent over the stream to clients that subscribed with `updates=true` when messages were deleted.
+// Exactly one of the fields of `deleted` is set.
+//
+// swagger:model MessagesDeleted
+type MessagesDeleted struct {
+	// required: true
+	Deleted DeletedMessages `json:"deleted"`
+}
+
+// DeletedMessages describes which messages were deleted.
+//
+// swagger:model DeletedMessages
+type DeletedMessages struct {
+	// The id of the deleted message.
+	//
+	// example: 25
+	ID uint `json:"id,omitempty"`
+	// All messages of this application were deleted.
+	//
+	// example: 5
+	ApplicationID uint `json:"appid,omitempty"`
+	// All messages of the user were deleted.
+	//
+	// example: true
+	All bool `json:"all,omitempty"`
+}

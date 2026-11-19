@@ -47,6 +47,19 @@ export interface IMessage {
     extras?: IMessageExtras;
 }
 
+export interface IMessagesDeleted {
+    deleted: {
+        id?: number;
+        appid?: number;
+        all?: boolean;
+    };
+}
+
+export type IStreamEvent = IMessage | IMessagesDeleted;
+
+export const isMessagesDeleted = (event: IStreamEvent): event is IMessagesDeleted =>
+    'deleted' in event;
+
 export interface IMessageExtras {
     [key: string]: any; // eslint-disable-line  @typescript-eslint/no-explicit-any
 }

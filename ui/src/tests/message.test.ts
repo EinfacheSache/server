@@ -14,7 +14,7 @@ import {afterAll, beforeAll, describe, expect, it} from 'vitest';
 import * as auth from './authentication';
 import * as selector from './selector';
 import axios from 'axios';
-import {IApplication, IMessage, IMessageExtras} from '../types';
+import {IApplication, IMessage, IMessageExtras, IPagedMessages} from '../types';
 
 let page: Page;
 let gotify: GotifyTest;
@@ -334,6 +334,29 @@ describe('Messages', () => {
             await expect(updateMessage(linux1, linuxServerToken)).rejects.toMatchObject({
                 response: {status: 404},
             });
+        });
+    });
+    describe('messages deleted elsewhere', () => {
+        it('removes a deleted message without reload', async () => {
+            const all = await axios.get<IPagedMessages>(`${gotify.url}/message`, axiosAuth);
+            const latest = all.data.messages[0];
+            expect(latest.title).toBe('Backup finished');
+            await axios.delete(`${gotify.url}/message/${latest.id}`, axiosAuth);
+            await waitForCount(page, '#messages .message', 5);
+            expect(await extractMessages(5)).toEqual([
+                backup2,
+                linux3,
+                windows3,
+                backup1,
+                windows1,
+            ]);
+        });
+        it('removes all messages of a cleared application without reload', async () => {
+            const apps = await axios.get<IApplication[]>(`${gotify.url}/application`, axiosAuth);
+            const linux = apps.data.find((app) => app.name === 'Linux')!;
+            await axios.delete(`${gotify.url}/application/${linux.id}/message`, axiosAuth);
+            await waitForCount(page, '#messages .message', 4);
+            expect(await extractMessages(4)).toEqual([backup2, windows3, backup1, windows1]);
         });
     });
     it('deletes all messages', async () => {

@@ -4,7 +4,7 @@ import axios, {AxiosResponse} from 'axios';
 import * as config from '../config';
 import {createTransformer} from 'mobx-utils';
 import {SnackReporter} from '../snack/SnackManager';
-import {IApplication, IMessage, IPagedMessages} from '../types';
+import {IApplication, IMessage, IMessagesDeleted, IPagedMessages} from '../types';
 import {closeSnackbar, SnackbarKey} from 'notistack';
 
 const AllMessages = -1;
@@ -91,6 +91,30 @@ export class MessagesStore {
                     messages[index] = message;
                 }
             });
+    };
+
+    /**
+     * Removes messages that were deleted elsewhere (other tab, device or API client) from the local state.
+     */
+    @action
+    public removeDeleted = ({deleted}: IMessagesDeleted) => {
+        const keep = (message: IMessage) =>
+            !(
+                deleted.all ||
+                (deleted.appid !== undefined && message.appid === deleted.appid) ||
+                (deleted.id !== undefined && message.id === deleted.id)
+            );
+
+        Object.values(this.state).forEach((state) => {
+            const remaining = state.messages.filter(keep);
+            if (remaining.length !== state.messages.length) {
+                state.messages.replace(remaining);
+            }
+        });
+
+        Array.from(this.pendingDeletes.values())
+            .filter(({message}) => !keep(message))
+            .forEach(({message}) => this.cancelPendingDelete(message));
     };
 
     @action

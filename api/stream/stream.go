@@ -90,7 +90,12 @@ func (a *API) NotifyUpdated(userID uint, msg *model.MessageExternal) {
 	a.notify(userID, msg, func(c *client) bool { return c.updates })
 }
 
-func (a *API) notify(userID uint, msg *model.MessageExternal, include func(*client) bool) {
+// NotifyDeleted notifies the clients with the given userID, that subscribed to updates, that messages were deleted.
+func (a *API) NotifyDeleted(userID uint, deleted *model.MessagesDeleted) {
+	a.notify(userID, deleted, func(c *client) bool { return c.updates })
+}
+
+func (a *API) notify(userID uint, msg any, include func(*client) bool) {
 	a.lock.RLock()
 	defer a.lock.RUnlock()
 	if clients, ok := a.clients[userID]; ok {
@@ -131,9 +136,11 @@ func (a *API) register(client *client) {
 //
 // Websocket, return newly created messages.
 //
-// With `updates=true`, the stream additionally returns messages that were updated.
+// With `updates=true`, the stream additionally returns messages that were updated and
+// notifications about deleted messages.
 // An updated message has the id of a message that was sent before and the `updated` field set.
 // Clients should replace the existing message with the same id instead of adding a new one.
+// Deleted messages are sent as `{"deleted": {...}}`, see MessagesDeleted.
 //
 //	---
 //	schema: ws, wss

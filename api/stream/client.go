@@ -4,7 +4,6 @@ import (
 	"time"
 
 	"github.com/gorilla/websocket"
-	"github.com/gotify/server/v3/model"
 	"github.com/rs/zerolog/log"
 )
 
@@ -23,7 +22,7 @@ var writeJSON = func(conn *websocket.Conn, v any) error {
 type client struct {
 	conn    *websocket.Conn
 	onClose func(*client)
-	write   chan *model.MessageExternal
+	write   chan any
 	closed  chan struct{}
 	userID  uint
 	token   string
@@ -34,7 +33,7 @@ type client struct {
 func newClient(conn *websocket.Conn, userID uint, token string, updates bool, onClose func(*client)) *client {
 	return &client{
 		conn:    conn,
-		write:   make(chan *model.MessageExternal, 1),
+		write:   make(chan any, 1),
 		closed:  make(chan struct{}),
 		userID:  userID,
 		token:   token,

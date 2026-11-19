@@ -29,6 +29,8 @@ type MessageSuite struct {
 	recorder        *httptest.ResponseRecorder
 	notifiedMessage *model.MessageExternal
 	updatedMessage  *model.MessageExternal
+	deleted         *model.MessagesDeleted
+	deletedUserID   uint
 }
 
 func (s *MessageSuite) BeforeTest(suiteName, testName string) {
@@ -39,6 +41,8 @@ func (s *MessageSuite) BeforeTest(suiteName, testName string) {
 	s.db = testdb.NewDB(s.T())
 	s.notifiedMessage = nil
 	s.updatedMessage = nil
+	s.deleted = nil
+	s.deletedUserID = 0
 	s.a = &MessageAPI{DB: s.db, Notifier: s}
 }
 
@@ -52,6 +56,11 @@ func (s *MessageSuite) Notify(userID uint, msg *model.MessageExternal) {
 
 func (s *MessageSuite) NotifyUpdated(userID uint, msg *model.MessageExternal) {
 	s.updatedMessage = msg
+}
+
+func (s *MessageSuite) NotifyDeleted(userID uint, deleted *model.MessagesDeleted) {
+	s.deletedUserID = userID
+	s.deleted = deleted
 }
 
 func (s *MessageSuite) Test_ensureCorrectJsonRepresentation() {
@@ -250,6 +259,7 @@ func (s *MessageSuite) Test_DeleteMessage_notExistingID() {
 	s.a.DeleteMessage(s.ctx)
 
 	assert.Equal(s.T(), 404, s.recorder.Code)
+	assert.Nil(s.T(), s.deleted)
 }
 
 func (s *MessageSuite) Test_DeleteMessage_existingIDButNotOwner() {
@@ -272,6 +282,8 @@ func (s *MessageSuite) Test_DeleteMessage() {
 
 	assert.Equal(s.T(), 200, s.recorder.Code)
 	s.db.AssertMessageNotExist(50)
+	assert.Equal(s.T(), uint(6), s.deletedUserID)
+	assert.Equal(s.T(), &model.MessagesDeleted{Deleted: model.DeletedMessages{ID: 50}}, s.deleted)
 }
 
 func (s *MessageSuite) Test_DeleteMessageWithID() {
@@ -283,6 +295,8 @@ func (s *MessageSuite) Test_DeleteMessageWithID() {
 
 	assert.Equal(s.T(), 200, s.recorder.Code)
 	s.db.AssertMessageNotExist(55)
+	assert.Equal(s.T(), uint(2), s.deletedUserID)
+	assert.Equal(s.T(), &model.MessagesDeleted{Deleted: model.DeletedMessages{ApplicationID: 5}}, s.deleted)
 }
 
 func (s *MessageSuite) Test_DeleteMessageWithToken_notExistingID() {
@@ -306,6 +320,7 @@ func (s *MessageSuite) Test_DeleteMessageWithToken_notOwner() {
 
 	s.db.AssertMessageExist(5)
 	assert.Equal(s.T(), 404, s.recorder.Code)
+	assert.Nil(s.T(), s.deleted)
 }
 
 func (s *MessageSuite) Test_DeleteMessages() {
@@ -320,6 +335,8 @@ func (s *MessageSuite) Test_DeleteMessages() {
 	assert.Equal(s.T(), 200, s.recorder.Code)
 	s.db.AssertMessageExist(22)
 	s.db.AssertMessageNotExist(5, 6, 7, 8)
+	assert.Equal(s.T(), uint(4), s.deletedUserID)
+	assert.Equal(s.T(), &model.MessagesDeleted{Deleted: model.DeletedMessages{All: true}}, s.deleted)
 }
 
 func (s *MessageSuite) Test_CreateMessage_onJson_allParams() {

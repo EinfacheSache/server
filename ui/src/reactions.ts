@@ -1,6 +1,7 @@
 import {reaction} from 'mobx';
 import * as Notifications from './snack/browserNotification';
 import {StoreMapping} from './stores';
+import {isMessagesDeleted} from './types';
 
 const AUDIO_REPEAT_DELAY = 1000;
 
@@ -20,6 +21,10 @@ export const registerReactions = (stores: StoreMapping) => {
 
     const loadAll = () => {
         stores.wsStore.listen((message) => {
+            if (isMessagesDeleted(message)) {
+                stores.messagesStore.removeDeleted(message);
+                return;
+            }
             if (message.updated) {
                 stores.messagesStore.updateSingleMessage(message);
                 return;

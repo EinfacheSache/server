@@ -2215,7 +2215,7 @@
             "basicAuth": []
           }
         ],
-        "description": "With `updates=true`, the stream additionally returns messages that were updated.\nAn updated message has the id of a message that was sent before and the `updated` field set.\nClients should replace the existing message with the same id instead of adding a new one.",
+        "description": "With `updates=true`, the stream additionally returns messages that were updated and\nnotifications about deleted messages.\nAn updated message has the id of a message that was sent before and the `updated` field set.\nClients should replace the existing message with the same id instead of adding a new one.\nDeleted messages are sent as `{\"deleted\": {...}}`, see MessagesDeleted.",
         "produces": [
           "application/json"
         ],
@@ -2977,6 +2977,33 @@
       "x-go-name": "CurrentUserExternal",
       "x-go-package": "github.com/gotify/server/v3/model"
     },
+    "DeletedMessages": {
+      "type": "object",
+      "title": "DeletedMessages describes which messages were deleted.",
+      "properties": {
+        "all": {
+          "description": "All messages of the user were deleted.",
+          "type": "boolean",
+          "x-go-name": "All",
+          "example": true
+        },
+        "appid": {
+          "description": "All messages of this application were deleted.",
+          "type": "integer",
+          "format": "int64",
+          "x-go-name": "ApplicationID",
+          "example": 5
+        },
+        "id": {
+          "description": "The id of the deleted message.",
+          "type": "integer",
+          "format": "int64",
+          "x-go-name": "ID",
+          "example": 25
+        }
+      },
+      "x-go-package": "github.com/gotify/server/v3/model"
+    },
     "ElevateRequest": {
       "type": "object",
       "title": "ElevateRequest parameters for client elevation.",
@@ -3179,6 +3206,20 @@
         }
       },
       "x-go-name": "MessageExternal",
+      "x-go-package": "github.com/gotify/server/v3/model"
+    },
+    "MessagesDeleted": {
+      "description": "Sent over the stream to clients that subscribed with `updates=true` when messages were deleted.\nExactly one of the fields of `deleted` is set.",
+      "type": "object",
+      "title": "MessagesDeleted Model",
+      "required": [
+        "deleted"
+      ],
+      "properties": {
+        "deleted": {
+          "$ref": "#/definitions/DeletedMessages"
+        }
+      },
       "x-go-package": "github.com/gotify/server/v3/model"
     },
     "OIDCExternalAuthorizeRequest": {

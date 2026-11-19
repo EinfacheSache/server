@@ -34,10 +34,11 @@ type Notifier interface {
 	Notify(userID uint, message *model.MessageExternal)
 }
 
-// MessageNotifier notifies when a message was created or updated.
+// MessageNotifier notifies when a message was created, updated or deleted.
 type MessageNotifier interface {
 	Notifier
 	NotifyUpdated(userID uint, message *model.MessageExternal)
+	NotifyDeleted(userID uint, deleted *model.MessagesDeleted)
 }
 
 // The MessageAPI provides handlers for managing messages.
@@ -222,7 +223,9 @@ func (a *MessageAPI) GetMessagesWithApplication(ctx *gin.Context) {
 //	        $ref: "#/definitions/Error"
 func (a *MessageAPI) DeleteMessages(ctx *gin.Context) {
 	userID := auth.GetUserID(ctx)
-	successOrAbort(ctx, 500, a.DB.DeleteMessagesByUser(userID))
+	if success := successOrAbort(ctx, 500, a.DB.DeleteMessagesByUser(userID)); success {
+		a.Notifier.NotifyDeleted(userID, &model.MessagesDeleted{Deleted: model.DeletedMessages{All: true}})
+	}
 }
 
 // DeleteMessageWithApplication deletes all messages from a specific application.
@@ -266,7 +269,9 @@ func (a *MessageAPI) DeleteMessageWithApplication(ctx *gin.Context) {
 			return
 		}
 		if application != nil && application.UserID == auth.GetUserID(ctx) {
-			successOrAbort(ctx, 500, a.DB.DeleteMessagesByApplication(id))
+			if success := successOrAbort(ctx, 500, a.DB.DeleteMessagesByApplication(id)); success {
+				a.Notifier.NotifyDeleted(application.UserID, &model.MessagesDeleted{Deleted: model.DeletedMessages{ApplicationID: id}})
+			}
 		} else {
 			ctx.AbortWithError(404, errors.New("application does not exists"))
 		}
@@ -322,7 +327,9 @@ func (a *MessageAPI) DeleteMessage(ctx *gin.Context) {
 			return
 		}
 		if app != nil && app.UserID == auth.GetUserID(ctx) {
-			successOrAbort(ctx, 500, a.DB.DeleteMessageByID(id))
+			if success := successOrAbort(ctx, 500, a.DB.DeleteMessageByID(id)); success {
+				a.Notifier.NotifyDeleted(app.UserID, &model.MessagesDeleted{Deleted: model.DeletedMessages{ID: id}})
+			}
 		} else {
 			ctx.AbortWithError(404, errors.New("message does not exist"))
 		}

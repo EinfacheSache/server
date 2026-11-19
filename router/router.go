@@ -105,8 +105,9 @@ func Create(db *database.GormDatabase, vInfo *model.VersionInfo, conf *config.Co
 		NotifyDeleted: streamHandler.NotifyDeletedClient,
 	}
 	applicationHandler := api.ApplicationAPI{
-		DB:       db,
-		ImageDir: conf.UploadedImagesDir,
+		DB:                    db,
+		ImageDir:              conf.UploadedImagesDir,
+		NotifyMessagesDeleted: streamHandler.NotifyDeleted,
 	}
 	sessionHandler := api.SessionAPI{DB: db, NotifyDeleted: streamHandler.NotifyDeletedClient, SecureCookie: conf.Server.SecureCookie, LocalAuthEnabled: conf.LocalAuthEnabled}
 	userChangeNotifier := new(api.UserChangeNotifier)

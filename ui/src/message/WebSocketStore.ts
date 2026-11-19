@@ -2,7 +2,7 @@ import {SnackReporter} from '../snack/SnackManager';
 import {CurrentUser} from '../CurrentUser';
 import * as config from '../config';
 import {AxiosError} from 'axios';
-import {IMessage} from '../types';
+import {IStreamEvent} from '../types';
 
 export class WebSocketStore {
     private wsActive = false;
@@ -13,7 +13,7 @@ export class WebSocketStore {
         private readonly currentUser: CurrentUser
     ) {}
 
-    public listen = (callback: (msg: IMessage) => void) => {
+    public listen = (callback: (msg: IStreamEvent) => void) => {
         if (!this.currentUser.loggedIn || this.wsActive) {
             return;
         }

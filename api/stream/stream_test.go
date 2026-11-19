@@ -669,3 +669,29 @@ func TestNotifyUpdatedOnlyToClientsWithUpdates(t *testing.T) {
 	api.NotifyUpdated(2, &model.MessageExternal{ID: 2, Message: "other user", Updated: &updated})
 	expectNoMessage(legacy, disabled, withUpdates)
 }
+
+func TestNotifyDeletedOnlyToClientsWithUpdates(t *testing.T) {
+	mode.Set(mode.TestDev)
+
+	defer leaktest.Check(t)()
+	server, api := bootTestServer(staticUserID())
+	defer server.Close()
+	defer api.Close()
+
+	wsURL := wsURL(server.URL)
+
+	legacy := testClient(t, wsURL)
+	defer legacy.conn.Close()
+	withUpdates := createClient(t, wsURL+"?updates=true")
+	defer withUpdates.conn.Close()
+
+	waitForConnectedClients(api, 2)
+
+	api.NotifyDeleted(1, &model.MessagesDeleted{Deleted: model.DeletedMessages{ID: 5}})
+
+	withUpdates.conn.SetReadDeadline(time.Now().Add(time.Second))
+	var actual map[string]any
+	assert.Nil(t, withUpdates.conn.ReadJSON(&actual))
+	assert.Equal(t, map[string]any{"deleted": map[string]any{"id": float64(5)}}, actual)
+	expectNoMessage(legacy)
+}
